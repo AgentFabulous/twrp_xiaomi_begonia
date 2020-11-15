@@ -1,23 +1,15 @@
-on boot
-    wait /sbin/patchlevel_set
-
-on init
-    start patchlevel
+on early-init
+    mount debugfs debugfs /sys/kernel/debug
+    chmod 0755 /sys/kernel/debug
 
 on fs
-    export ANDROID_ROOT /system_root
+    wait /dev/block/platform/bootdevice/
+    symlink /dev/block/platform/bootdevice/ /dev/block/bootdevice
     install_keyring
 
 on fs
     start hwservicemanager
     start servicemanager
-
-service patchlevel /sbin/patchlevel.sh
-    user root
-    group root
-    disabled
-    oneshot
-    seclabel u:r:recovery:s0
 
 service teei_daemon /sbin/teei_daemon
     user root
@@ -31,33 +23,27 @@ service capi-2-0 /sbin/vendor.microtrust.hardware.capi@2.0-service
     disabled
     seclabel u:r:recovery:s0
 
-service hidl_memory /sbin/android.hidl.allocator@1.0-service
-    user root
-    group root
-    disabled
-    seclabel u:r:recovery:s0
-
-service hwservicemanager /sbin/hwservicemanager
+service hwservicemanager /system/bin/hwservicemanager
     user root
     group root readproc
     disabled
     onrestart setprop hwservicemanager.ready false
     seclabel u:r:recovery:s0
 
-service servicemanager /sbin/servicemanager
+service servicemanager /system/bin/servicemanager
     user root
     group root readproc
     disabled
     seclabel u:r:recovery:s0
 
-service keystore_auth /sbin/keystore_auth
+service keystore_auth /system/bin/keystore_auth
     oneshot
     user system
     group root
     disabled
     seclabel u:r:recovery:s0
 
-service keystore /sbin/keystore /tmp/misc/keystore
+service keystore /system/bin/keystore /tmp/misc/keystore
     user root
     group root drmrpc readproc
     disabled
@@ -81,7 +67,6 @@ on property:hwservicemanager.ready=true
     start hidl_memory
     start keymaster-3-0
     start gatekeeper-1-0
-
 
 on property:ro.crypto.state=unsupported
     stop hidl_memory
